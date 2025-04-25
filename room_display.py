@@ -829,9 +829,11 @@ def handleresult(result):
                 else:
                     display.text("No upcoming meetings", 10, 80, scale=1)
                 
-                display.text("Be sure to book this table online,", 10, 210, scale=1)
-                display.text("so remote people are aware it is in use.", 10, 222, scale=1)
-                #presto.update()
+                display.text("Be sure to book this online, this is: ", 10, 198, scale=1)
+                display.text(room_email, 10, 210, scale=1)
+                display.text("so everyone is aware it is in use.", 10, 222, scale=1)
+                
+                #presto.updat()
         
         # Display the status for the occupied state
         # For the available state, we've already displayed it with specific coloring based on next meeting time
