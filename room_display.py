@@ -19,6 +19,12 @@ except ImportError:
     except ImportError:
         print("Neither urequests nor requests module found")
 
+# Import ntptime for time synchronization
+try:
+    import ntptime
+except ImportError:
+    print("ntptime module not found - time sync will be disabled")
+
 # Function to check if file exists in MicroPython
 def file_exists(filename):
     """Check if a file exists in MicroPython environment"""
@@ -28,6 +34,48 @@ def file_exists(filename):
         return True
     except OSError:  # MicroPython uses OSError for file not found
         return False
+
+# Function to synchronize time via NTP
+def sync_time_via_ntp(max_retries=3, retry_delay=5):
+    """
+    Synchronize the device's RTC with NTP time.
+    
+    Args:
+        max_retries (int): Maximum number of retry attempts
+        retry_delay (int): Delay in seconds between retries
+    
+    Returns:
+        bool: True if sync successful, False otherwise
+    """
+    if 'ntptime' not in globals():
+        print("NTP sync skipped - ntptime module not available")
+        return False
+    
+    for attempt in range(max_retries):
+        try:
+            print(f"Syncing time via NTP (attempt {attempt + 1}/{max_retries})...")
+            ntptime.settime()
+            
+            # Get current time to verify sync worked
+            current_time = utime.time()
+            time_tuple = utime.gmtime(current_time)
+            time_str = "{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d} UTC".format(
+                time_tuple[0], time_tuple[1], time_tuple[2],
+                time_tuple[3], time_tuple[4], time_tuple[5]
+            )
+            
+            print(f"Time synchronized successfully: {time_str}")
+            return True
+            
+        except Exception as e:
+            print(f"NTP sync attempt {attempt + 1} failed: {e}")
+            if attempt < max_retries - 1:
+                print(f"Retrying in {retry_delay} seconds...")
+                utime.sleep(retry_delay)
+            else:
+                print("All NTP sync attempts failed - continuing with system time")
+    
+    return False
 
 # Try to import secrets first
 try:
@@ -53,6 +101,14 @@ try:
     # MS_TENANT_ID = "your-tenant-id"
     # ROOM_EMAIL = "room@example.com"
     connection_successful = presto.connect()
+    
+    # Sync time via NTP after successful WLAN connection
+    if connection_successful:
+        print("WLAN connected successfully, syncing time...")
+        sync_time_via_ntp()
+    else:
+        print("WLAN connection failed - skipping NTP sync")
+        
 except ImportError:
     presto = None
     print("Failed to import Presto. Please ensure the module is installed.")
@@ -829,9 +885,9 @@ def handleresult(result):
                 else:
                     display.text("No upcoming meetings", 10, 80, scale=1)
                 
-                display.text("Be sure to book this online, this is: ", 10, 198, scale=1)
+                display.text("Be sure to book this online, this is", 10, 198, scale=1)
                 display.text(room_email, 10, 210, scale=1)
-                display.text("so everyone is aware it is in use.", 10, 222, scale=1)
+                display.text("so remote people are aware it is in use.", 10, 222, scale=1)
                 
                 #presto.updat()
         
